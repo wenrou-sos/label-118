@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Stall {
+  id         Int       @id @default(autoincrement())
+  stallNumber String    @unique
+  name         String
+  location     String
+  area         Float
+  status       String    @default("normal")
+  hygieneLevel String    @default("B")
+  merchantId   Int?
+  merchant     Merchant? @relation(fields: [merchantId], references: [id])
+  lease        Lease?
+  rentBills   RentBill[]
+  categoryRequests CategoryRequest[]
+  openingRecords OpeningRecord[]
+  fireInspections FireInspection[]
+  wasteRecords WasteRecord[]
+  complaints   Complaint[]
+  activityParticipations ActivityParticipation[]
+  equipmentRepairs EquipmentRepair[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Merchant {
+  id           Int      @id @default(autoincrement())
+  name         String
+  contactPerson String
+  phone        String
+  idCard       String?
+  businessCategory String
+  stalls       Stall[]
+  lease        Lease?
+  rentBills   RentBill[]
+  categoryRequests CategoryRequest[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Lease {
+  id           Int      @id @default(autoincrement())
+  stallId      Int      @unique
+  stall        Stall    @relation(fields: [stallId], references: [id])
+  merchantId   Int
+  merchant     Merchant @relation(fields: [merchantId], references: [id])
+  startDate    DateTime
+  endDate      DateTime
+  monthlyRent  Float
+  deposit      Float
+  status       String   @default("active")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model RentBill {
+  id           Int      @id @default(autoincrement())
+  stallId      Int
+  stall        Stall    @relation(fields: [stallId], references: [id])
+  merchantId   Int
+  merchant     Merchant @relation(fields: [merchantId], references: [id])
+  billMonth    String
+  amount       Float
+  status       String   @default("unpaid")
+  dueDate      DateTime
+  paidDate     DateTime?
+  remark       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model CategoryRequest {
+  id           Int      @id @default(autoincrement())
+  stallId      Int
+  stall        Stall    @relation(fields: [stallId], references: [id])
+  merchantId   Int
+  merchant     Merchant @relation(fields: [merchantId], references: [id])
+  oldCategory  String
+  newCategory  String
+  reason       String
+  status       String   @default("pending")
+  approvedBy   String?
+  approvedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model OpeningRecord {
+  id           Int      @id @default(autoincrement())
+  stallId      Int
+  stall        Stall    @relation(fields: [stallId], references: [id])
+  openTime     DateTime
+  closeTime    DateTime?
+  date         DateTime @db.Date
+  createdAt    DateTime @default(now())
+}
+
+model FireInspection {
+  id           Int      @id @default(autoincrement())
+  stallId      Int
+  stall        Stall    @relation(fields: [stallId], references: [id])
+  gasValveClosed Boolean @default(false)
+  firePassageClear Boolean @default(false)
+  photoUrl     String?
+  inspector    String
+  date         DateTime @db.Date
+  remark       String?
+  createdAt    DateTime @default(now())
+}
+
+model WasteRecord {
+  id           Int      @id @default(autoincrement())
+  stallId      Int
+  stall        Stall    @relation(fields: [stallId], references: [id])
+  wasteType    String
+  weight       Float
+  collector    String
+  date         DateTime @db.Date
+  remark       String?
+  createdAt    DateTime @default(now())
+}
+
+model Complaint {
+  id           Int      @id @default(autoincrement())
+  stallId      Int?
+  stall        Stall?    @relation(fields: [stallId], references: [id])
+  type         String
+  description  String
+  customerName String?
+  customerPhone String?
+  status       String   @default("pending")
+  assigneeId   Int?
+  assignee     Admin?  @relation(fields: [assigneeId], references: [id])
+  handleResult String?
+  handleAt     DateTime?
+  revisitResult String?
+  revisitAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Activity {
+  id           Int      @id @default(autoincrement())
+  name         String
+  type         String
+  startDate    DateTime
+  endDate      DateTime
+  description  String?
+  expectedVisitors Int?
+  actualVisitors Int?
+  status       String   @default("planning")
+  participations ActivityParticipation[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ActivityParticipation {
+  id           Int      @id @default(autoincrement())
+  activityId   Int
+  activity     Activity @relation(fields: [activityId], references: [id])
+  stallId      Int
+  stall        Stall    @relation(fields: [stallId], references: [id])
+  signupAt     DateTime @default(now())
+  beforeSales  Float?
+  duringSales  Float?
+  status       String   @default("registered")
+  createdAt    DateTime @default(now())
+}
+
+model Equipment {
+  id           Int      @id @default(autoincrement())
+  name         String
+  type         String
+  location     String
+  status       String   @default("normal")
+  repairs      EquipmentRepair[]
+  createdAt    DateTime @default(now())
+}
+
+model EquipmentRepair {
+  id           Int      @id @default(autoincrement())
+  equipmentId  Int?
+  equipment    Equipment? @relation(fields: [equipmentId], references: [id])
+  stallId      Int?
+  stall        Stall?    @relation(fields: [stallId], references: [id])
+  isPublic     Boolean  @default(true)
+  description  String
+  reporter     String?
+  status       String   @default("pending")
+  assigneeId   Int?
+  assignee     Admin?  @relation(fields: [assigneeId], references: [id])
+  handleResult String?
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  name         String
+  role         String
+  phone        String
+  department   String?
+  complaints   Complaint[]
+  repairs      EquipmentRepair[]
+  createdAt    DateTime @default(now())
+}
