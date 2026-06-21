@@ -40,109 +40,6 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 const { RangePicker } = TimePicker;
 
-const mockOpenings = [
-  {
-    id: 1,
-    date: dayjs().subtract(1, 'day').toDate(),
-    openTime: dayjs().subtract(1, 'day').hour(8).minute(0).toDate(),
-    closeTime: dayjs().subtract(1, 'day').hour(22).minute(0).toDate(),
-    stall: { id: 1, stallNumber: 'A-001', name: '老北京炸酱面摊位' },
-  },
-  {
-    id: 2,
-    date: dayjs().subtract(1, 'day').toDate(),
-    openTime: dayjs().subtract(1, 'day').hour(8).minute(30).toDate(),
-    closeTime: dayjs().subtract(1, 'day').hour(21).minute(30).toDate(),
-    stall: { id: 2, stallNumber: 'A-002', name: '川味麻辣烫摊位' },
-  },
-  {
-    id: 3,
-    date: dayjs().subtract(1, 'day').toDate(),
-    openTime: dayjs().subtract(1, 'day').hour(9).minute(0).toDate(),
-    closeTime: dayjs().subtract(1, 'day').hour(23).minute(0).toDate(),
-    stall: { id: 3, stallNumber: 'A-003', name: '粤式茶餐厅摊位' },
-  },
-  {
-    id: 4,
-    date: dayjs().subtract(1, 'day').toDate(),
-    openTime: dayjs().subtract(1, 'day').hour(8).minute(15).toDate(),
-    closeTime: dayjs().subtract(1, 'day').hour(22).minute(30).toDate(),
-    stall: { id: 4, stallNumber: 'B-001', name: '日式料理摊位' },
-  },
-];
-
-const mockFireInspections = [
-  {
-    id: 1,
-    date: dayjs().subtract(1, 'day').toDate(),
-    gasValveClosed: true,
-    firePassageClear: true,
-    inspector: '李主管',
-    remark: '',
-    photoUrl: null,
-    stall: { id: 1, stallNumber: 'A-001', name: '老北京炸酱面摊位' },
-  },
-  {
-    id: 2,
-    date: dayjs().subtract(1, 'day').toDate(),
-    gasValveClosed: true,
-    firePassageClear: false,
-    inspector: '李主管',
-    remark: '消防通道有杂物',
-    photoUrl: null,
-    stall: { id: 2, stallNumber: 'A-002', name: '川味麻辣烫摊位' },
-  },
-  {
-    id: 3,
-    date: dayjs().subtract(1, 'day').toDate(),
-    gasValveClosed: false,
-    firePassageClear: true,
-    inspector: '李主管',
-    remark: '燃气阀门未关闭！',
-    photoUrl: null,
-    stall: { id: 6, stallNumber: 'C-001', name: '鲜果吧摊位' },
-  },
-];
-
-const mockWasteRecords = [
-  {
-    id: 1,
-    date: dayjs().subtract(1, 'day').toDate(),
-    wasteType: '餐厨垃圾',
-    weight: 5,
-    collector: '清运公司A',
-    remark: '',
-    stall: { id: 1, stallNumber: 'A-001', name: '老北京炸酱面摊位' },
-  },
-  {
-    id: 2,
-    date: dayjs().subtract(1, 'day').toDate(),
-    wasteType: '餐厨垃圾',
-    weight: 7,
-    collector: '清运公司A',
-    remark: '',
-    stall: { id: 2, stallNumber: 'A-002', name: '川味麻辣烫摊位' },
-  },
-  {
-    id: 3,
-    date: dayjs().subtract(1, 'day').toDate(),
-    wasteType: '餐厨垃圾',
-    weight: 12,
-    collector: '清运公司A',
-    remark: '桶较多',
-    stall: { id: 3, stallNumber: 'A-003', name: '粤式茶餐厅摊位' },
-  },
-  {
-    id: 4,
-    date: dayjs().subtract(2, 'day').toDate(),
-    wasteType: '餐厨垃圾',
-    weight: 9,
-    collector: '清运公司A',
-    remark: '',
-    stall: { id: 4, stallNumber: 'B-001', name: '日式料理摊位' },
-  },
-];
-
 const mockStalls = [
   { id: 1, stallNumber: 'A-001', name: '老北京炸酱面摊位' },
   { id: 2, stallNumber: 'A-002', name: '川味麻辣烫摊位' },
@@ -155,9 +52,9 @@ const mockStalls = [
 ];
 
 function Daily() {
-  const [openings, setOpenings] = useState(mockOpenings);
-  const [fireInspections, setFireInspections] = useState(mockFireInspections);
-  const [wasteRecords, setWasteRecords] = useState(mockWasteRecords);
+  const [openings, setOpenings] = useState([]);
+  const [fireInspections, setFireInspections] = useState([]);
+  const [wasteRecords, setWasteRecords] = useState([]);
   const [isOpeningModalOpen, setIsOpeningModalOpen] = useState(false);
   const [isFireModalOpen, setIsFireModalOpen] = useState(false);
   const [isWasteModalOpen, setIsWasteModalOpen] = useState(false);
@@ -177,11 +74,11 @@ function Daily() {
         api.get('/daily/fire-inspections'),
         api.get('/daily/waste-records'),
       ]);
-      if (o.data?.length) setOpenings(o.data);
-      if (f.data?.length) setFireInspections(f.data);
-      if (w.data?.length) setWasteRecords(w.data);
+      setOpenings(o.data || []);
+      setFireInspections(f.data || []);
+      setWasteRecords(w.data || []);
     } catch (e) {
-      console.log('使用mock数据');
+      message.error('加载数据失败');
     }
   };
 
@@ -195,26 +92,14 @@ function Daily() {
           ? values.date.hour(values.closeTime.hour()).minute(values.closeTime.minute()).toDate()
           : null,
       };
-      const res = await api.post('/daily/openings', data);
-      setOpenings([res.data, ...openings]);
+      await api.post('/daily/openings', data);
+      message.success('开店记录已登记');
+      setIsOpeningModalOpen(false);
+      openingForm.resetFields();
+      loadData();
     } catch (e) {
-      const stall = mockStalls.find((s) => s.id === values.stallId);
-      setOpenings([
-        {
-          id: Date.now(),
-          date: values.date.toDate(),
-          openTime: values.date.hour(values.openTime.hour()).minute(values.openTime.minute()).toDate(),
-          closeTime: values.closeTime
-            ? values.date.hour(values.closeTime.hour()).minute(values.closeTime.minute()).toDate()
-            : null,
-          stall,
-        },
-        ...openings,
-      ]);
+      message.error('提交失败');
     }
-    message.success('开店记录已登记');
-    setIsOpeningModalOpen(false);
-    openingForm.resetFields();
   };
 
   const handleFireSubmit = async (values) => {
@@ -223,23 +108,14 @@ function Daily() {
         ...values,
         date: values.date.toDate(),
       };
-      const res = await api.post('/daily/fire-inspections', data);
-      setFireInspections([res.data, ...fireInspections]);
+      await api.post('/daily/fire-inspections', data);
+      message.success('消防检查已记录');
+      setIsFireModalOpen(false);
+      fireForm.resetFields();
+      loadData();
     } catch (e) {
-      const stall = mockStalls.find((s) => s.id === values.stallId);
-      setFireInspections([
-        {
-          id: Date.now(),
-          ...values,
-          date: values.date.toDate(),
-          stall,
-        },
-        ...fireInspections,
-      ]);
+      message.error('提交失败');
     }
-    message.success('消防检查已记录');
-    setIsFireModalOpen(false);
-    fireForm.resetFields();
   };
 
   const handleWasteSubmit = async (values) => {
@@ -248,23 +124,14 @@ function Daily() {
         ...values,
         date: values.date.toDate(),
       };
-      const res = await api.post('/daily/waste-records', data);
-      setWasteRecords([res.data, ...wasteRecords]);
+      await api.post('/daily/waste-records', data);
+      message.success('垃圾清运记录已创建');
+      setIsWasteModalOpen(false);
+      wasteForm.resetFields();
+      loadData();
     } catch (e) {
-      const stall = mockStalls.find((s) => s.id === values.stallId);
-      setWasteRecords([
-        {
-          id: Date.now(),
-          ...values,
-          date: values.date.toDate(),
-          stall,
-        },
-        ...wasteRecords,
-      ]);
+      message.error('提交失败');
     }
-    message.success('垃圾清运记录已创建');
-    setIsWasteModalOpen(false);
-    wasteForm.resetFields();
   };
 
   const openingColumns = [

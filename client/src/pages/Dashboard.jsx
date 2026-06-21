@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Statistic, List, Avatar, Tag, Space, Typography } from 'antd';
+import { Row, Col, Card, Statistic, List, Avatar, Tag, Space, Typography, message } from 'antd';
 import {
   ShopOutlined,
   UserOutlined,
@@ -34,7 +34,7 @@ const itemVariants = {
 
 function Dashboard() {
   const [summary, setSummary] = useState(null);
-  const [recentActivities, setRecentActivities] = useState({ complaints: [], repairs: [], activities: [] });
+  const [recentActivities, setRecentActivities] = useState(null);
   const [hygieneData, setHygieneData] = useState([]);
 
   useEffect(() => {
@@ -59,41 +59,8 @@ function Dashboard() {
         ]);
       }
     } catch (e) {
-      console.error(e);
-      setMockData();
+      message.error('加载数据失败');
     }
-  };
-
-  const setMockData = () => {
-    setSummary({
-      stallCount: 24,
-      merchantCount: 20,
-      activeLeases: 20,
-      todayOpenings: 18,
-      expiringLeases: 5,
-      unpaidBills: 8,
-      pendingComplaints: 3,
-      pendingRepairs: 2,
-      ongoingActivities: 1,
-      hygiene: { A: 8, B: 12, C: 4 },
-    });
-    setHygieneData([
-      { type: 'A级', value: 8, color: '#52c41a' },
-      { type: 'B级', value: 12, color: '#fa8c16' },
-      { type: 'C级', value: 4, color: '#f5222d' },
-    ]);
-    setRecentActivities({
-      complaints: [
-        { id: 1, type: '卫生问题', description: '桌面不干净', stall: { name: '鲜果吧摊位' }, createdAt: new Date() },
-        { id: 2, type: '服务态度', description: '服务员态度不好', stall: null, createdAt: new Date() },
-      ],
-      repairs: [
-        { id: 1, description: '空调不制冷', equipment: { name: '中央空调2号' }, stall: null, createdAt: new Date() },
-      ],
-      activities: [
-        { id: 1, name: '周末夜市', type: '周末特惠', status: 'ongoing', createdAt: new Date() },
-      ],
-    });
   };
 
   const statCards = summary
@@ -231,7 +198,7 @@ function Dashboard() {
               <motion.div variants={itemVariants}>
                 <Card title="最新投诉" className="dashboard-card">
                   <List
-                    dataSource={recentActivities.complaints.slice(0, 5)}
+                    dataSource={recentActivities?.complaints?.slice(0, 5) || []}
                     renderItem={(item) => (
                       <List.Item>
                         <List.Item.Meta
@@ -263,7 +230,7 @@ function Dashboard() {
               <motion.div variants={itemVariants}>
                 <Card title="最新报修" className="dashboard-card">
                   <List
-                    dataSource={recentActivities.repairs.slice(0, 5)}
+                    dataSource={recentActivities?.repairs?.slice(0, 5) || []}
                     renderItem={(item) => (
                       <List.Item>
                         <List.Item.Meta
@@ -295,7 +262,7 @@ function Dashboard() {
               <motion.div variants={itemVariants}>
                 <Card title="最新活动" className="dashboard-card">
                   <List
-                    dataSource={recentActivities.activities.slice(0, 5)}
+                    dataSource={recentActivities?.activities?.slice(0, 5) || []}
                     renderItem={(item) => (
                       <List.Item>
                         <List.Item.Meta

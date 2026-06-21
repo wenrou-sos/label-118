@@ -44,72 +44,6 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
 
-const mockActivities = [
-  {
-    id: 1,
-    name: '夏日美食节',
-    type: '美食节',
-    startDate: dayjs().add(5, 'day').toDate(),
-    endDate: dayjs().add(12, 'day').toDate(),
-    description: '汇聚各地美食，特价优惠，精彩表演不断',
-    expectedVisitors: 5000,
-    actualVisitors: null,
-    status: 'planning',
-    participations: [
-      { id: 1, stallId: 1, stall: { id: 1, stallNumber: 'A-001', name: '老北京炸酱面摊位' }, signupAt: new Date(), beforeSales: null, duringSales: null },
-      { id: 2, stallId: 2, stall: { id: 2, stallNumber: 'A-002', name: '川味麻辣烫摊位' }, signupAt: new Date(), beforeSales: null, duringSales: null },
-    ],
-    createdAt: new Date(),
-  },
-  {
-    id: 2,
-    name: '周末夜市',
-    type: '周末特惠',
-    startDate: dayjs().add(3, 'day').toDate(),
-    endDate: dayjs().add(4, 'day').toDate(),
-    description: '周末特惠活动，所有摊位8折起',
-    expectedVisitors: 2000,
-    actualVisitors: 1500,
-    status: 'ongoing',
-    participations: [
-      { id: 3, stallId: 1, stall: { id: 1, stallNumber: 'A-001', name: '老北京炸酱面摊位' }, signupAt: new Date(), beforeSales: 8000, duringSales: 12000 },
-      { id: 4, stallId: 2, stall: { id: 2, stallNumber: 'A-002', name: '川味麻辣烫摊位' }, signupAt: new Date(), beforeSales: 7500, duringSales: 11000 },
-      { id: 5, stallId: 3, stall: { id: 3, stallNumber: 'A-003', name: '粤式茶餐厅摊位' }, signupAt: new Date(), beforeSales: 10000, duringSales: 15500 },
-      { id: 6, stallId: 4, stall: { id: 4, stallNumber: 'B-001', name: '日式料理摊位' }, signupAt: new Date(), beforeSales: 9000, duringSales: 14000 },
-      { id: 7, stallId: 5, stall: { id: 5, stallNumber: 'B-002', name: '韩式烤肉摊位' }, signupAt: new Date(), beforeSales: 8500, duringSales: 13000 },
-      { id: 8, stallId: 6, stall: { id: 6, stallNumber: 'B-003', name: '甜品工坊摊位' }, signupAt: new Date(), beforeSales: 6000, duringSales: 9500 },
-    ],
-    createdAt: new Date(),
-  },
-  {
-    id: 3,
-    name: '打卡集章赢好礼',
-    type: '打卡集章',
-    startDate: dayjs().subtract(10, 'day').toDate(),
-    endDate: dayjs().subtract(3, 'day').toDate(),
-    description: '在5个以上摊位消费即可集章，集满10章赢取精美礼品',
-    expectedVisitors: 3000,
-    actualVisitors: 2800,
-    status: 'completed',
-    participations: [
-      { id: 9, stallId: 1, stall: { id: 1, stallNumber: 'A-001', name: '老北京炸酱面摊位' }, signupAt: new Date(), beforeSales: 7000, duringSales: 9500 },
-      { id: 10, stallId: 3, stall: { id: 3, stallNumber: 'A-003', name: '粤式茶餐厅摊位' }, signupAt: new Date(), beforeSales: 9000, duringSales: 12000 },
-    ],
-    createdAt: new Date(),
-  },
-];
-
-const mockStalls = [
-  { id: 1, stallNumber: 'A-001', name: '老北京炸酱面摊位' },
-  { id: 2, stallNumber: 'A-002', name: '川味麻辣烫摊位' },
-  { id: 3, stallNumber: 'A-003', name: '粤式茶餐厅摊位' },
-  { id: 4, stallNumber: 'B-001', name: '日式料理摊位' },
-  { id: 5, stallNumber: 'B-002', name: '韩式烤肉摊位' },
-  { id: 6, stallNumber: 'B-003', name: '甜品工坊摊位' },
-  { id: 7, stallNumber: 'C-001', name: '鲜果吧摊位' },
-  { id: 8, stallNumber: 'C-002', name: '汉堡之家摊位' },
-];
-
 const statusMap = {
   planning: { color: 'blue', text: '策划中', icon: <CalendarOutlined /> },
   ongoing: { color: 'green', text: '进行中', icon: <RiseOutlined /> },
@@ -125,7 +59,8 @@ const typeColorMap = {
 };
 
 function Activities() {
-  const [activities, setActivities] = useState(mockActivities);
+  const [activities, setActivities] = useState([]);
+  const [stalls, setStalls] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
@@ -142,10 +77,14 @@ function Activities() {
 
   const loadData = async () => {
     try {
-      const res = await api.get('/activities');
-      if (res.data?.length) setActivities(res.data);
+      const [resActivities, resStalls] = await Promise.all([
+        api.get('/activities'),
+        api.get('/stalls'),
+      ]);
+      setActivities(resActivities.data || []);
+      setStalls(resStalls.data || []);
     } catch (e) {
-      console.log('使用mock数据');
+      message.error('加载数据失败');
     }
   };
 
@@ -157,101 +96,58 @@ function Activities() {
         endDate: values.dateRange[1].toDate(),
       };
       delete data.dateRange;
-      const res = await api.post('/activities', data);
-      setActivities([res.data, ...activities]);
+      await api.post('/activities', data);
+      message.success('活动已创建');
+      setIsCreateModalOpen(false);
+      createForm.resetFields();
+      loadData();
     } catch (e) {
-      const activity = {
-        id: Date.now(),
-        ...values,
-        startDate: values.dateRange[0].toDate(),
-        endDate: values.dateRange[1].toDate(),
-        status: 'planning',
-        participations: [],
-        createdAt: new Date(),
-      };
-      delete activity.dateRange;
-      setActivities([activity, ...activities]);
+      message.error('创建活动失败');
     }
-    message.success('活动已创建');
-    setIsCreateModalOpen(false);
-    createForm.resetFields();
   };
 
   const handleSignup = async (values) => {
     try {
       await api.post(`/activities/${currentActivity.id}/participations`, values);
-    } catch (e) {}
-    const stall = mockStalls.find((s) => s.id === values.stallId);
-    const updated = activities.map((a) => {
-      if (a.id === currentActivity.id) {
-        return {
-          ...a,
-          participations: [
-            ...a.participations,
-            { id: Date.now(), stallId: values.stallId, stall, signupAt: new Date() },
-          ],
-        };
-      }
-      return a;
-    });
-    setActivities(updated);
-    message.success('报名成功');
-    setIsSignupModalOpen(false);
-    signupForm.resetFields();
-  };
-
-  const handleDeleteParticipation = (activityId, participationId) => {
-    const updated = activities.map((a) => {
-      if (a.id === activityId) {
-        return {
-          ...a,
-          participations: a.participations.filter((p) => p.id !== participationId),
-        };
-      }
-      return a;
-    });
-    setActivities(updated);
-    if (currentActivity?.id === activityId) {
-      setCurrentActivity({
-        ...currentActivity,
-        participations: currentActivity.participations.filter((p) => p.id !== participationId),
-      });
+      message.success('报名成功');
+      setIsSignupModalOpen(false);
+      signupForm.resetFields();
+      loadData();
+    } catch (e) {
+      message.error('报名失败');
     }
-    message.success('已取消报名');
   };
 
-  const handleDeleteActivity = (id) => {
-    setActivities(activities.filter((a) => a.id !== id));
-    message.success('活动已删除');
+  const handleDeleteParticipation = async (activityId, participationId) => {
+    try {
+      await api.delete(`/activities/${activityId}/participations/${participationId}`);
+      message.success('已取消报名');
+      loadData();
+    } catch (e) {
+      message.error('取消报名失败');
+    }
+  };
+
+  const handleDeleteActivity = async (id) => {
+    try {
+      await api.delete(`/activities/${id}`);
+      message.success('活动已删除');
+      loadData();
+    } catch (e) {
+      message.error('删除活动失败');
+    }
   };
 
   const handleSalesSubmit = async (values) => {
     try {
       await api.put(`/activities/participations/${currentParticipation.id}`, values);
-    } catch (e) {}
-    const updated = activities.map((a) => {
-      if (a.id === currentActivity.id) {
-        return {
-          ...a,
-          participations: a.participations.map((p) =>
-            p.id === currentParticipation.id ? { ...p, ...values } : p
-          ),
-        };
-      }
-      return a;
-    });
-    setActivities(updated);
-    if (currentActivity?.id === currentActivity.id) {
-      setCurrentActivity({
-        ...currentActivity,
-        participations: currentActivity.participations.map((p) =>
-          p.id === currentParticipation.id ? { ...p, ...values } : p
-        ),
-      });
+      message.success('销售数据已更新');
+      setIsSalesModalOpen(false);
+      salesForm.resetFields();
+      loadData();
+    } catch (e) {
+      message.error('更新销售数据失败');
     }
-    message.success('销售数据已更新');
-    setIsSalesModalOpen(false);
-    salesForm.resetFields();
   };
 
   const openSignup = (activity) => {
@@ -550,7 +446,7 @@ function Activities() {
         <Form form={signupForm} layout="vertical" onFinish={handleSignup}>
           <Form.Item name="stallId" label="选择摊位" rules={[{ required: true }]}>
             <Select placeholder="选择参与活动的摊位">
-              {mockStalls
+              {stalls
                 .filter(
                   (s) =>
                     !currentActivity?.participations?.some((p) => p.stallId === s.id)

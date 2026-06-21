@@ -42,84 +42,6 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 const { Step } = Steps;
 
-const mockRepairs = [
-  {
-    id: 1,
-    isPublic: true,
-    description: '空调不制冷，出风不凉',
-    reporter: '管理员',
-    status: 'pending',
-    assignee: null,
-    handleResult: null,
-    completedAt: null,
-    equipment: { id: 5, name: '中央空调2号', type: '空调', location: 'B区中央', status: 'faulty' },
-    stall: null,
-    createdAt: dayjs().subtract(2, 'hour').toDate(),
-  },
-  {
-    id: 2,
-    isPublic: false,
-    description: '冰箱不制冷，里面的食材要坏了',
-    reporter: '张老板',
-    status: 'processing',
-    assignee: { id: 3, name: '王师傅', role: '维修组组长', phone: '13800138003', department: '维修组' },
-    handleResult: null,
-    completedAt: null,
-    equipment: null,
-    stall: { id: 3, stallNumber: 'A-003', name: '粤式茶餐厅摊位' },
-    createdAt: dayjs().subtract(5, 'hour').toDate(),
-  },
-  {
-    id: 3,
-    isPublic: true,
-    description: '卫生间水龙头漏水严重',
-    reporter: '保洁员李阿姨',
-    status: 'completed',
-    assignee: { id: 3, name: '王师傅', role: '维修组组长', phone: '13800138003', department: '维修组' },
-    handleResult: '已更换新的水龙头，测试不漏水了',
-    completedAt: dayjs().subtract(1, 'hour').toDate(),
-    equipment: { id: 1, name: '卫生间洗手池1号', type: '卫生间', location: 'A区公共卫生间', status: 'normal' },
-    stall: null,
-    createdAt: dayjs().subtract(1, 'day').toDate(),
-  },
-  {
-    id: 4,
-    isPublic: true,
-    description: '入口处灯光不亮，晚上很暗',
-    reporter: '巡查员',
-    status: 'pending',
-    assignee: null,
-    handleResult: null,
-    completedAt: null,
-    equipment: { id: 3, name: '中央空调1号', type: '空调', location: '美食街入口', status: 'normal' },
-    stall: null,
-    createdAt: dayjs().subtract(30, 'minute').toDate(),
-  },
-];
-
-const mockEquipments = [
-  { id: 1, name: '卫生间洗手池1号', type: '卫生间', location: 'A区公共卫生间', status: 'normal' },
-  { id: 2, name: '电梯A', type: '电梯', location: 'A区电梯', status: 'normal' },
-  { id: 3, name: '中央空调1号', type: '空调', location: '美食街入口', status: 'normal' },
-  { id: 4, name: '停车场道闸', type: '停车场', location: '停车场入口', status: 'normal' },
-  { id: 5, name: '中央空调2号', type: '空调', location: 'B区中央', status: 'faulty' },
-];
-
-const mockStalls = [
-  { id: 1, stallNumber: 'A-001', name: '老北京炸酱面摊位' },
-  { id: 2, stallNumber: 'A-002', name: '川味麻辣烫摊位' },
-  { id: 3, stallNumber: 'A-003', name: '粤式茶餐厅摊位' },
-  { id: 4, stallNumber: 'B-001', name: '日式料理摊位' },
-  { id: 5, stallNumber: 'B-002', name: '韩式烤肉摊位' },
-];
-
-const mockAdmins = [
-  { id: 1, name: '张经理', role: '运营主管', phone: '13800138001', department: '运营部' },
-  { id: 2, name: '李主管', role: '物业管理员', phone: '13800138002', department: '物业部' },
-  { id: 3, name: '王师傅', role: '维修组组长', phone: '13800138003', department: '维修组' },
-  { id: 4, name: '赵师傅', role: '维修技工', phone: '13800138005', department: '维修组' },
-];
-
 const statusMap = {
   pending: { color: 'orange', text: '待派工', icon: <ClockCircleOutlined /> },
   processing: { color: 'blue', text: '维修中', icon: <ToolOutlined /> },
@@ -135,8 +57,10 @@ const equipmentTypeColor = {
 };
 
 function Repairs() {
-  const [repairs, setRepairs] = useState(mockRepairs);
-  const [equipments, setEquipments] = useState(mockEquipments);
+  const [repairs, setRepairs] = useState([]);
+  const [equipments, setEquipments] = useState([]);
+  const [stalls, setStalls] = useState([]);
+  const [admins, setAdmins] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -154,69 +78,56 @@ function Repairs() {
 
   const loadData = async () => {
     try {
-      const [r, e] = await Promise.all([
+      const [r, e, s, a] = await Promise.all([
         api.get('/repairs'),
         api.get('/repairs/equipments'),
+        api.get('/stalls'),
+        api.get('/daily/admins'),
       ]);
-      if (r.data?.length) setRepairs(r.data);
-      if (e.data?.length) setEquipments(e.data);
+      setRepairs(r.data || []);
+      setEquipments(e.data || []);
+      setStalls(s.data || []);
+      setAdmins(a.data || []);
     } catch (e) {
-      console.log('使用mock数据');
+      message.error('加载数据失败');
     }
   };
 
   const handleCreate = async (values) => {
     try {
-      const res = await api.post('/repairs', values);
-      setRepairs([res.data, ...repairs]);
+      await api.post('/repairs', values);
+      message.success('报修单已提交');
+      setIsCreateModalOpen(false);
+      createForm.resetFields();
+      setRepairType('public');
+      loadData();
     } catch (e) {
-      const repair = {
-        id: Date.now(),
-        ...values,
-        status: 'pending',
-        createdAt: new Date(),
-        equipment: values.equipmentId
-          ? equipments.find((eq) => eq.id === values.equipmentId)
-          : null,
-        stall: values.stallId ? mockStalls.find((s) => s.id === values.stallId) : null,
-      };
-      setRepairs([repair, ...repairs]);
+      message.error('提交报修单失败');
     }
-    message.success('报修单已提交');
-    setIsCreateModalOpen(false);
-    createForm.resetFields();
-    setRepairType('public');
   };
 
   const handleAssign = async (values) => {
     try {
       await api.put(`/repairs/${currentRepair.id}/assign`, values);
-    } catch (e) {}
-    const assignee = mockAdmins.find((a) => a.id === values.assigneeId);
-    setRepairs(
-      repairs.map((r) =>
-        r.id === currentRepair.id ? { ...r, status: 'processing', assignee } : r
-      )
-    );
-    message.success('已派工');
-    setIsAssignModalOpen(false);
-    assignForm.resetFields();
+      message.success('已派工');
+      setIsAssignModalOpen(false);
+      assignForm.resetFields();
+      loadData();
+    } catch (e) {
+      message.error('派工失败');
+    }
   };
 
   const handleComplete = async (values) => {
     try {
       await api.put(`/repairs/${currentRepair.id}/complete`, values);
-    } catch (e) {}
-    setRepairs(
-      repairs.map((r) =>
-        r.id === currentRepair.id
-          ? { ...r, status: 'completed', handleResult: values.handleResult, completedAt: new Date() }
-          : r
-      )
-    );
-    message.success('维修完成');
-    setIsCompleteModalOpen(false);
-    completeForm.resetFields();
+      message.success('维修完成');
+      setIsCompleteModalOpen(false);
+      completeForm.resetFields();
+      loadData();
+    } catch (e) {
+      message.error('完成维修失败');
+    }
   };
 
   const openDetail = (record) => {
@@ -583,7 +494,7 @@ function Repairs() {
           ) : (
             <Form.Item name="stallId" label="选择摊位" rules={[{ required: true }]}>
               <Select placeholder="请选择摊位">
-                {mockStalls.map((s) => (
+                {stalls.map((s) => (
                   <Option key={s.id} value={s.id}>
                     {s.stallNumber} - {s.name}
                   </Option>
@@ -613,7 +524,7 @@ function Repairs() {
         <Form form={assignForm} layout="vertical" onFinish={handleAssign}>
           <Form.Item name="assigneeId" label="指派维修人员" rules={[{ required: true }]}>
             <Select placeholder="请选择维修人员">
-              {mockAdmins
+              {admins
                 .filter((a) => a.department === '维修组')
                 .map((a) => (
                   <Option key={a.id} value={a.id}>

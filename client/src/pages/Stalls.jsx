@@ -194,9 +194,9 @@ function HygieneIcon({ level }) {
 }
 
 function Stalls() {
-  const [stalls, setStalls] = useState(mockStalls);
-  const [warningLeases, setWarningLeases] = useState(mockWarningLeases);
-  const [categoryRequests, setCategoryRequests] = useState(mockCategoryRequests);
+  const [stalls, setStalls] = useState([]);
+  const [warningLeases, setWarningLeases] = useState([]);
+  const [categoryRequests, setCategoryRequests] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [editingStall, setEditingStall] = useState(null);
@@ -215,11 +215,11 @@ function Stalls() {
         api.get('/stalls/lease/warning'),
         api.get('/stalls/category-requests'),
       ]);
-      if (stallsRes.data?.length) setStalls(stallsRes.data);
-      if (leaseRes.data?.length) setWarningLeases(leaseRes.data);
-      if (requestsRes.data?.length) setCategoryRequests(requestsRes.data);
+      setStalls(stallsRes.data || []);
+      setWarningLeases(leaseRes.data || []);
+      setCategoryRequests(requestsRes.data || []);
     } catch (e) {
-      console.log('使用mock数据');
+      message.error('加载数据失败');
     }
   };
 
@@ -241,74 +241,58 @@ function Stalls() {
     try {
       if (editingStall) {
         await api.put(`/stalls/${editingStall.id}`, values);
-        setStalls(stalls.map((s) => (s.id === editingStall.id ? { ...s, ...values } : s)));
         message.success('摊位信息更新成功');
       } else {
-        const res = await api.post('/stalls', values);
-        setStalls([...stalls, res.data]);
+        await api.post('/stalls', values);
         message.success('摊位创建成功');
       }
       setIsModalOpen(false);
+      loadData();
     } catch (e) {
-      if (!editingStall) {
-        setStalls([...stalls, { ...values, id: Date.now() }]);
-      } else {
-        setStalls(stalls.map((s) => (s.id === editingStall.id ? { ...s, ...values } : s)));
-      }
-      message.success(editingStall ? '摊位信息更新成功' : '摊位创建成功');
-      setIsModalOpen(false);
+      message.error('操作失败');
     }
   };
 
   const handleDelete = async (id) => {
     try {
       await api.delete(`/stalls/${id}`);
-    } catch (e) {}
-    setStalls(stalls.filter((s) => s.id !== id));
-    message.success('摊位已删除');
+      message.success('摊位已删除');
+      loadData();
+    } catch (e) {
+      message.error('删除失败');
+    }
   };
 
   const handleApproveRequest = async (id) => {
     try {
       await api.put(`/stalls/category-requests/${id}/approve`, { approvedBy: '管理员' });
-    } catch (e) {}
-    setCategoryRequests(
-      categoryRequests.map((r) => (r.id === id ? { ...r, status: 'approved' } : r))
-    );
-    message.success('已批准品类变更');
+      message.success('已批准品类变更');
+      loadData();
+    } catch (e) {
+      message.error('操作失败');
+    }
   };
 
   const handleRejectRequest = async (id) => {
     try {
       await api.put(`/stalls/category-requests/${id}/reject`, { approvedBy: '管理员' });
-    } catch (e) {}
-    setCategoryRequests(
-      categoryRequests.map((r) => (r.id === id ? { ...r, status: 'rejected' } : r))
-    );
-    message.success('已拒绝品类变更');
+      message.success('已拒绝品类变更');
+      loadData();
+    } catch (e) {
+      message.error('操作失败');
+    }
   };
 
   const handleSubmitRequest = async (values) => {
     try {
-      const res = await api.post('/stalls/category-requests', values);
-      setCategoryRequests([res.data, ...categoryRequests]);
+      await api.post('/stalls/category-requests', values);
+      message.success('品类变更申请已提交');
+      setIsRequestModalOpen(false);
+      requestForm.resetFields();
+      loadData();
     } catch (e) {
-      const stall = stalls.find((s) => s.id === values.stallId);
-      setCategoryRequests([
-        {
-          id: Date.now(),
-          ...values,
-          stall,
-          merchant: stall?.merchant,
-          status: 'pending',
-          createdAt: new Date(),
-        },
-        ...categoryRequests,
-      ]);
+      message.error('提交失败');
     }
-    message.success('品类变更申请已提交');
-    setIsRequestModalOpen(false);
-    requestForm.resetFields();
   };
 
   const stallColumns = [

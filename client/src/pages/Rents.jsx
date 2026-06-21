@@ -26,80 +26,17 @@ import dayjs from 'dayjs';
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-const mockBills = [
-  {
-    id: 1,
-    billMonth: '2026-06',
-    amount: 5000,
-    status: 'unpaid',
-    dueDate: dayjs().endOf('month').toDate(),
-    paidDate: null,
-    stall: { id: 1, stallNumber: 'A-001', name: '老北京炸酱面摊位' },
-    merchant: { id: 1, name: '老北京炸酱面' },
-  },
-  {
-    id: 2,
-    billMonth: '2026-06',
-    amount: 5500,
-    status: 'unpaid',
-    dueDate: dayjs().endOf('month').toDate(),
-    paidDate: null,
-    stall: { id: 2, stallNumber: 'A-002', name: '川味麻辣烫摊位' },
-    merchant: { id: 2, name: '川味麻辣烫' },
-  },
-  {
-    id: 3,
-    billMonth: '2026-05',
-    amount: 6000,
-    status: 'paid',
-    dueDate: dayjs().subtract(1, 'month').endOf('month').toDate(),
-    paidDate: dayjs().subtract(1, 'month').date(10).toDate(),
-    stall: { id: 3, stallNumber: 'A-003', name: '粤式茶餐厅摊位' },
-    merchant: { id: 3, name: '粤式茶餐厅' },
-  },
-  {
-    id: 4,
-    billMonth: '2026-05',
-    amount: 6500,
-    status: 'paid',
-    dueDate: dayjs().subtract(1, 'month').endOf('month').toDate(),
-    paidDate: dayjs().subtract(1, 'month').date(12).toDate(),
-    stall: { id: 4, stallNumber: 'B-001', name: '日式料理摊位' },
-    merchant: { id: 4, name: '日式料理' },
-  },
-  {
-    id: 5,
-    billMonth: '2026-04',
-    amount: 7000,
-    status: 'paid',
-    dueDate: dayjs().subtract(2, 'month').endOf('month').toDate(),
-    paidDate: dayjs().subtract(2, 'month').date(8).toDate(),
-    stall: { id: 5, stallNumber: 'B-002', name: '韩式烤肉摊位' },
-    merchant: { id: 5, name: '韩式烤肉' },
-  },
-  {
-    id: 6,
-    billMonth: '2026-06',
-    amount: 5500,
-    status: 'unpaid',
-    dueDate: dayjs().endOf('month').toDate(),
-    paidDate: null,
-    stall: { id: 6, stallNumber: 'B-003', name: '甜品工坊摊位' },
-    merchant: { id: 6, name: '甜品工坊' },
-  },
-];
-
 function Rents() {
-  const [bills, setBills] = useState(mockBills);
+  const [bills, setBills] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [form] = Form.useForm();
   const [stats, setStats] = useState({
-    total: 6,
-    paid: 3,
-    unpaid: 3,
-    paidAmount: 19500,
-    unpaidAmount: 16000,
+    total: 0,
+    paid: 0,
+    unpaid: 0,
+    paidAmount: 0,
+    unpaidAmount: 0,
   });
 
   useEffect(() => {
@@ -112,10 +49,10 @@ function Rents() {
         api.get('/rents'),
         api.get('/rents/statistics'),
       ]);
-      if (billsRes.data?.length) setBills(billsRes.data);
-      if (statsRes.data) setStats(statsRes.data);
+      setBills(billsRes.data || []);
+      setStats(statsRes.data || { total: 0, paid: 0, unpaid: 0, paidAmount: 0, unpaidAmount: 0 });
     } catch (e) {
-      console.log('使用mock数据');
+      message.error('加载数据失败');
     }
   };
 
@@ -125,37 +62,24 @@ function Rents() {
         ...values,
         dueDate: values.dueDate.toDate(),
       };
-      const res = await api.post('/rents', data);
-      setBills([res.data, ...bills]);
+      await api.post('/rents', data);
+      message.success('账单创建成功');
+      setIsModalOpen(false);
+      form.resetFields();
+      loadData();
     } catch (e) {
-      const stall = { id: values.stallId, stallNumber: 'A-001', name: '测试摊位' };
-      setBills([
-        {
-          id: Date.now(),
-          ...values,
-          status: 'unpaid',
-          stall,
-          merchant: { id: 1, name: '测试商户' },
-          paidDate: null,
-        },
-        ...bills,
-      ]);
+      message.error('账单创建失败');
     }
-    message.success('账单创建成功');
-    setIsModalOpen(false);
-    form.resetFields();
   };
 
   const handlePay = async (id) => {
     try {
       await api.put(`/rents/${id}/pay`);
-    } catch (e) {}
-    setBills(
-      bills.map((b) =>
-        b.id === id ? { ...b, status: 'paid', paidDate: new Date() } : b
-      )
-    );
-    message.success('缴费成功');
+      message.success('缴费成功');
+      loadData();
+    } catch (e) {
+      message.error('缴费失败');
+    }
   };
 
   const filteredBills = statusFilter === 'all' ? bills : bills.filter((b) => b.status === statusFilter);

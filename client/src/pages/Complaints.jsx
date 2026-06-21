@@ -39,76 +39,6 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 
-const mockComplaints = [
-  {
-    id: 1,
-    type: '菜品质量',
-    description: '菜品不新鲜，有异味',
-    customerName: '顾客A',
-    customerPhone: '13700137001',
-    status: 'pending',
-    assignee: null,
-    handleResult: null,
-    handleAt: null,
-    revisitResult: null,
-    revisitAt: null,
-    stall: { id: 2, stallNumber: 'A-002', name: '川味麻辣烫摊位' },
-    createdAt: dayjs().subtract(2, 'hour').toDate(),
-  },
-  {
-    id: 2,
-    type: '卫生问题',
-    description: '桌面不干净，有油污',
-    customerName: '顾客B',
-    customerPhone: '13700137002',
-    status: 'processing',
-    assignee: { id: 4, name: '赵小姐', role: '客服专员', department: '客服部' },
-    handleResult: null,
-    handleAt: null,
-    revisitResult: null,
-    revisitAt: null,
-    stall: { id: 7, stallNumber: 'C-001', name: '鲜果吧摊位' },
-    createdAt: dayjs().subtract(5, 'hour').toDate(),
-  },
-  {
-    id: 3,
-    type: '服务态度',
-    description: '服务员态度不好，爱理不理',
-    customerName: '顾客C',
-    customerPhone: '13700137003',
-    status: 'completed',
-    assignee: { id: 4, name: '赵小姐', role: '客服专员', department: '客服部' },
-    handleResult: '已批评教育服务员，员工已认识到错误',
-    handleAt: dayjs().subtract(2, 'hour').toDate(),
-    revisitResult: '顾客满意',
-    revisitAt: dayjs().subtract(1, 'hour').toDate(),
-    stall: null,
-    createdAt: dayjs().subtract(1, 'day').toDate(),
-  },
-  {
-    id: 4,
-    type: '价格争议',
-    description: '菜单标价与实际收费不符，多收了5元',
-    customerName: '顾客D',
-    customerPhone: '13700137004',
-    status: 'pending',
-    assignee: null,
-    handleResult: null,
-    handleAt: null,
-    revisitResult: null,
-    revisitAt: null,
-    stall: { id: 4, stallNumber: 'B-001', name: '日式料理摊位' },
-    createdAt: dayjs().subtract(30, 'minute').toDate(),
-  },
-];
-
-const mockAdmins = [
-  { id: 1, name: '张经理', role: '运营主管', phone: '13800138001', department: '运营部' },
-  { id: 2, name: '李主管', role: '物业管理员', phone: '13800138002', department: '物业部' },
-  { id: 3, name: '王师傅', role: '维修组组长', phone: '13800138003', department: '维修组' },
-  { id: 4, name: '赵小姐', role: '客服专员', phone: '13800138004', department: '客服部' },
-];
-
 const statusMap = {
   pending: { color: 'orange', text: '待处理', icon: <ExclamationCircleOutlined /> },
   processing: { color: 'blue', text: '处理中', icon: <MessageOutlined /> },
@@ -125,7 +55,8 @@ const typeIconMap = {
 };
 
 function Complaints() {
-  const [complaints, setComplaints] = useState(mockComplaints);
+  const [complaints, setComplaints] = useState([]);
+  const [admins, setAdmins] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -137,12 +68,7 @@ function Complaints() {
   const [assignForm] = Form.useForm();
   const [completeForm] = Form.useForm();
   const [revisitForm] = Form.useForm();
-  const [typeStats, setTypeStats] = useState([
-    { type: '菜品质量', value: 1, color: '#f5222d' },
-    { type: '卫生问题', value: 1, color: '#fa8c16' },
-    { type: '服务态度', value: 1, color: '#1890ff' },
-    { type: '价格争议', value: 1, color: '#722ed1' },
-  ]);
+  const [typeStats, setTypeStats] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -150,90 +76,73 @@ function Complaints() {
 
   const loadData = async () => {
     try {
-      const [c, stats] = await Promise.all([
+      const [c, stats, adminsRes] = await Promise.all([
         api.get('/complaints'),
         api.get('/complaints/statistics/summary'),
+        api.get('/daily/admins'),
       ]);
-      if (c.data?.length) setComplaints(c.data);
-      if (stats.data?.typeStats) {
-        setTypeStats(
-          Object.entries(stats.data.typeStats).map(([type, value]) => ({
-            type,
-            value,
-            color: typeIconMap[type]?.props?.style?.color || '#1890ff',
-          }))
-        );
-      }
+      setComplaints(c.data || []);
+      setAdmins(adminsRes.data || []);
+      setTypeStats(
+        stats.data?.typeStats
+          ? Object.entries(stats.data.typeStats).map(([type, value]) => ({
+              type,
+              value,
+              color: typeIconMap[type]?.props?.style?.color || '#1890ff',
+            }))
+          : []
+      );
     } catch (e) {
-      console.log('使用mock数据');
+      message.error('加载数据失败');
     }
   };
 
   const handleCreate = async (values) => {
     try {
-      const res = await api.post('/complaints', values);
-      setComplaints([res.data, ...complaints]);
+      await api.post('/complaints', values);
+      message.success('投诉已受理');
+      setIsCreateModalOpen(false);
+      createForm.resetFields();
+      loadData();
     } catch (e) {
-      setComplaints([
-        {
-          id: Date.now(),
-          ...values,
-          status: 'pending',
-          createdAt: new Date(),
-        },
-        ...complaints,
-      ]);
+      message.error('提交失败');
     }
-    message.success('投诉已受理');
-    setIsCreateModalOpen(false);
-    createForm.resetFields();
   };
 
   const handleAssign = async (values) => {
     try {
       await api.put(`/complaints/${currentComplaint.id}/assign`, values);
-    } catch (e) {}
-    const assignee = mockAdmins.find((a) => a.id === values.assigneeId);
-    setComplaints(
-      complaints.map((c) =>
-        c.id === currentComplaint.id ? { ...c, status: 'processing', assignee } : c
-      )
-    );
-    message.success('已派单');
-    setIsAssignModalOpen(false);
-    assignForm.resetFields();
+      message.success('已派单');
+      setIsAssignModalOpen(false);
+      assignForm.resetFields();
+      loadData();
+    } catch (e) {
+      message.error('派单失败');
+    }
   };
 
   const handleComplete = async (values) => {
     try {
       await api.put(`/complaints/${currentComplaint.id}/complete`, values);
-    } catch (e) {}
-    setComplaints(
-      complaints.map((c) =>
-        c.id === currentComplaint.id
-          ? { ...c, status: 'completed', handleResult: values.handleResult, handleAt: new Date() }
-          : c
-      )
-    );
-    message.success('处理完成');
-    setIsCompleteModalOpen(false);
-    completeForm.resetFields();
+      message.success('处理完成');
+      setIsCompleteModalOpen(false);
+      completeForm.resetFields();
+      loadData();
+    } catch (e) {
+      message.error('提交失败');
+    }
   };
 
   const handleRevisit = async (values) => {
     try {
       await api.put(`/complaints/${currentComplaint.id}/revisit`, values);
-    } catch (e) {}
-    setComplaints(
-      complaints.map((c) =>
-        c.id === currentComplaint.id
-          ? { ...c, status: 'revisited', revisitResult: values.revisitResult, revisitAt: new Date() }
-          : c
-      )
-    );
-    message.success('回访记录已保存');
-    setIsRevisitModalOpen(false);
-    revisitForm.resetFields();
+      message.success('回访记录已保存');
+      setIsRevisitModalOpen(false);
+      revisitForm.resetFields();
+      loadData();
+    } catch (e) {
+      message.error('提交失败');
+    }
   };
 
   const openDetail = (record) => {
@@ -524,7 +433,7 @@ function Complaints() {
         <Form form={assignForm} layout="vertical" onFinish={handleAssign}>
           <Form.Item name="assigneeId" label="指派处理人" rules={[{ required: true }]}>
             <Select placeholder="请选择处理人">
-              {mockAdmins.map((a) => (
+              {admins.map((a) => (
                 <Option key={a.id} value={a.id}>
                   {a.name} - {a.role} ({a.department})
                 </Option>

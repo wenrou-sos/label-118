@@ -1,25 +1,19 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "美食街物业运营管理平台后端服务",
+  "description": "美食街物业运营管理平台后端服务（内存存储模式，无需数据库",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "node prisma/seed.js"
+    "start": "node src/index.js"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.2",
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "dayjs": "^1.11.10",
-    "multer": "^1.4.5-lts.1"
+    "dayjs": "^1.11.10"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0",
-    "prisma": "^5.10.2"
+    "nodemon": "^3.1.0"
   }
 }
