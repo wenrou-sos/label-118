@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Statistic, List, Avatar, Tag, Space, Typography, message } from 'antd';
+import { Row, Col, Card, Statistic, List, Avatar, Tag, Space, Typography, message, Button } from 'antd';
 import {
   ShopOutlined,
   UserOutlined,
@@ -10,11 +10,13 @@ import {
   CalendarOutlined,
   RiseOutlined,
   BellOutlined,
+  DownloadOutlined,
+  FileExcelOutlined,
 } from '@ant-design/icons';
 import { motion } from 'framer-motion';
 import { Pie, Line, Column } from '@ant-design/charts';
 import { Link } from 'react-router-dom';
-import api from '../api';
+import api, { downloadFile } from '../api';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
@@ -158,9 +160,27 @@ function Dashboard() {
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="show">
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Title level={3} style={{ marginTop: 0 }}>
-          运营概览
-        </Title>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Title level={3} style={{ margin: 0 }}>
+            运营概览
+          </Title>
+          <Button
+            type="primary"
+            icon={<FileExcelOutlined />}
+            size="large"
+            onClick={async () => {
+              try {
+                message.loading({ content: '正在生成运营周报...', key: 'weekly' });
+                await downloadFile('/reports/weekly-report', '运营周报.xlsx');
+                message.success({ content: '周报导出成功', key: 'weekly' });
+              } catch (e) {
+                message.error({ content: '周报导出失败', key: 'weekly' });
+              }
+            }}
+          >
+            一键导出运营周报
+          </Button>
+        </div>
 
         <motion.div variants={containerVariants}>
           <Row gutter={[16, 16]}>

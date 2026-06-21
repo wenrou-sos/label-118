@@ -32,10 +32,11 @@ import {
   ExclamationCircleOutlined,
   ClockCircleOutlined,
   UserOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pie, Column } from '@ant-design/charts';
-import api from '../api';
+import api, { downloadFile } from '../api';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -379,9 +380,25 @@ function Repairs() {
                     <Radio.Button value="processing">维修中</Radio.Button>
                     <Radio.Button value="completed">已完成</Radio.Button>
                   </Radio.Group>
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsCreateModalOpen(true)}>
-                    发起报修
-                  </Button>
+                  <Space>
+                    <Button
+                      icon={<DownloadOutlined />}
+                      onClick={async () => {
+                        try {
+                          message.loading({ content: '正在导出...', key: 'export' });
+                          await downloadFile('/reports/repairs', '设备报修报表.xlsx');
+                          message.success({ content: '导出成功', key: 'export' });
+                        } catch (e) {
+                          message.error({ content: '导出失败', key: 'export' });
+                        }
+                      }}
+                    >
+                      导出报表
+                    </Button>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsCreateModalOpen(true)}>
+                      发起报修
+                    </Button>
+                  </Space>
                 </div>
                 <AnimatePresence mode="wait">
                   <motion.div

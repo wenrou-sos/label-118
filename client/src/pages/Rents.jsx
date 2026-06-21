@@ -18,9 +18,9 @@ import {
   Tabs,
   Radio,
 } from 'antd';
-import { PlusOutlined, CheckOutlined, FileOutlined } from '@ant-design/icons';
+import { PlusOutlined, CheckOutlined, FileOutlined, DownloadOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
-import api from '../api';
+import api, { downloadFile } from '../api';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -210,9 +210,28 @@ function Rents() {
                 <Radio.Button value="unpaid">待缴费</Radio.Button>
                 <Radio.Button value="paid">已缴费</Radio.Button>
               </Radio.Group>
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
-                生成账单
-              </Button>
+              <Space>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={async () => {
+                    try {
+                      message.loading({ content: '正在导出...', key: 'export' });
+                      await downloadFile(
+                        `/reports/rents?status=${statusFilter}`,
+                        '租金账单报表.xlsx'
+                      );
+                      message.success({ content: '导出成功', key: 'export' });
+                    } catch (e) {
+                      message.error({ content: '导出失败', key: 'export' });
+                    }
+                  }}
+                >
+                  导出报表
+                </Button>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+                  生成账单
+                </Button>
+              </Space>
             </div>
             <motion.div
               initial={{ opacity: 0, y: 10 }}

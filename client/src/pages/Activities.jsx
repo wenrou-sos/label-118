@@ -34,10 +34,11 @@ import {
   ShopOutlined,
   DollarOutlined,
   BarChartOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Column, Line, Pie } from '@ant-design/charts';
-import api from '../api';
+import api, { downloadFile } from '../api';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -241,13 +242,34 @@ function Activities() {
     {
       title: '操作',
       key: 'actions',
-      width: 220,
+      width: 320,
       fixed: 'right',
       render: (_, row) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => openDetail(row)}>
             详情
           </Button>
+          {(row.participations?.length || 0) > 0 && (
+            <Button
+              type="link"
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={async () => {
+                try {
+                  message.loading({ content: '正在导出...', key: `exp-${row.id}` });
+                  await downloadFile(
+                    `/reports/activities/${row.id}/sales`,
+                    `活动销售数据_${row.name}.xlsx`
+                  );
+                  message.success({ content: '导出成功', key: `exp-${row.id}` });
+                } catch (e) {
+                  message.error({ content: '导出失败', key: `exp-${row.id}` });
+                }
+              }}
+            >
+              导出销售
+            </Button>
+          )}
           {row.status !== 'completed' && (
             <Button type="primary" size="small" icon={<UserAddOutlined />} onClick={() => openSignup(row)}>
               商户报名
@@ -620,6 +642,26 @@ function Activities() {
               )}
             />
 
+            {(currentActivity.participations?.length || 0) > 0 && (
+              <Button
+                block
+                icon={<DownloadOutlined />}
+                onClick={async () => {
+                  try {
+                    message.loading({ content: '正在导出...', key: 'exp-activity' });
+                    await downloadFile(
+                      `/reports/activities/${currentActivity.id}/sales`,
+                      `活动销售数据_${currentActivity.name}.xlsx`
+                    );
+                    message.success({ content: '导出成功', key: 'exp-activity' });
+                  } catch (e) {
+                    message.error({ content: '导出失败', key: 'exp-activity' });
+                  }
+                }}
+              >
+                导出商户销售数据
+              </Button>
+            )}
             {currentActivity.status !== 'completed' && (
               <Button
                 type="primary"
