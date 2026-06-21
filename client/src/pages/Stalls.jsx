@@ -28,10 +28,12 @@ import {
   DeleteOutlined,
   WarningOutlined,
   ExclamationCircleFilled,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api';
 import dayjs from 'dayjs';
+import LeaseDetailModal from '../components/LeaseDetailModal';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -199,7 +201,9 @@ function Stalls() {
   const [categoryRequests, setCategoryRequests] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isLeaseModalOpen, setIsLeaseModalOpen] = useState(false);
   const [editingStall, setEditingStall] = useState(null);
+  const [currentLeaseStall, setCurrentLeaseStall] = useState(null);
   const [form] = Form.useForm();
   const [requestForm] = Form.useForm();
   const [activeTab, setActiveTab] = useState('list');
@@ -235,6 +239,11 @@ function Stalls() {
       ...stall,
     });
     setIsModalOpen(true);
+  };
+
+  const openLeaseDetail = (stall) => {
+    setCurrentLeaseStall(stall);
+    setIsLeaseModalOpen(true);
   };
 
   const handleSubmit = async (values) => {
@@ -364,11 +373,14 @@ function Stalls() {
     {
       title: '操作',
       key: 'actions',
-      width: 160,
+      width: 240,
       render: (_, row) => (
         <Space>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEditModal(row)}>
             编辑
+          </Button>
+          <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => openLeaseDetail(row)}>
+            租约详情
           </Button>
           <Popconfirm title="确定要删除这个摊位吗？" onConfirm={() => handleDelete(row.id)}>
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>
@@ -431,10 +443,29 @@ function Stalls() {
     {
       title: '操作',
       key: 'actions',
-      render: () => (
+      render: (_, row) => (
         <Space>
           <Button type="link" size="small">发送提醒</Button>
-          <Button type="link" size="small">查看详情</Button>
+          <Button
+            type="link"
+            size="small"
+            icon={<FileTextOutlined />}
+            onClick={() =>
+              openLeaseDetail({
+                ...row.stall,
+                merchant: row.merchant,
+                lease: {
+                  id: row.id,
+                  startDate: row.startDate,
+                  endDate: row.endDate,
+                  monthlyRent: row.monthlyRent,
+                  status: row.status,
+                },
+              })
+            }
+          >
+            租约详情
+          </Button>
         </Space>
       ),
     },
@@ -690,6 +721,14 @@ function Stalls() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <LeaseDetailModal
+        visible={isLeaseModalOpen}
+        onCancel={() => setIsLeaseModalOpen(false)}
+        lease={currentLeaseStall?.lease}
+        stall={currentLeaseStall}
+        merchant={currentLeaseStall?.merchant}
+      />
     </div>
   );
 }

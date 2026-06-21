@@ -26,54 +26,6 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.get('/:id', async (req, res, next) => {
-  try {
-    const stall = await prisma.stall.findUnique({
-      where: { id: parseInt(req.params.id) },
-      include: {
-        merchant: true,
-        lease: true,
-        rentBills: { orderBy: { createdAt: 'desc' } },
-        categoryRequests: { orderBy: { createdAt: 'desc' } },
-      },
-    });
-    if (!stall) return res.status(404).json({ error: '摊位不存在' });
-    res.json(stall);
-  } catch (e) {
-    next(e);
-  }
-});
-
-router.post('/', async (req, res, next) => {
-  try {
-    const stall = await prisma.stall.create({ data: req.body });
-    res.json(stall);
-  } catch (e) {
-    next(e);
-  }
-});
-
-router.put('/:id', async (req, res, next) => {
-  try {
-    const stall = await prisma.stall.update({
-      where: { id: parseInt(req.params.id) },
-      data: req.body,
-    });
-    res.json(stall);
-  } catch (e) {
-    next(e);
-  }
-});
-
-router.delete('/:id', async (req, res, next) => {
-  try {
-    await prisma.stall.delete({ where: { id: parseInt(req.params.id) } });
-    res.json({ success: true });
-  } catch (e) {
-    next(e);
-  }
-});
-
 router.get('/lease/warning', async (req, res, next) => {
   try {
     const days = parseInt(req.query.days) || 30;
@@ -148,6 +100,60 @@ router.put('/category-requests/:id/reject', async (req, res, next) => {
       data: { status: 'rejected', approvedBy, approvedAt: new Date() },
     });
     res.json(request);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get('/:id', async (req, res, next) => {
+  try {
+    const stall = await prisma.stall.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: {
+        merchant: true,
+        lease: {
+          include: {
+            documents: {
+              orderBy: [{ version: 'desc' }, { createdAt: 'desc' }],
+            },
+          },
+        },
+        rentBills: { orderBy: { createdAt: 'desc' } },
+        categoryRequests: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+    if (!stall) return res.status(404).json({ error: '摊位不存在' });
+    res.json(stall);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post('/', async (req, res, next) => {
+  try {
+    const stall = await prisma.stall.create({ data: req.body });
+    res.json(stall);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.put('/:id', async (req, res, next) => {
+  try {
+    const stall = await prisma.stall.update({
+      where: { id: parseInt(req.params.id) },
+      data: req.body,
+    });
+    res.json(stall);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete('/:id', async (req, res, next) => {
+  try {
+    await prisma.stall.delete({ where: { id: parseInt(req.params.id) } });
+    res.json({ success: true });
   } catch (e) {
     next(e);
   }

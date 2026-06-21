@@ -38,7 +38,7 @@ model Merchant {
   idCard       String?
   businessCategory String
   stalls       Stall[]
-  lease        Lease?
+  leases       Lease[]
   rentBills   RentBill[]
   categoryRequests CategoryRequest[]
   createdAt    DateTime @default(now())
@@ -56,6 +56,23 @@ model Lease {
   monthlyRent  Float
   deposit      Float
   status       String   @default("active")
+  documents    LeaseDocument[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model LeaseDocument {
+  id           Int      @id @default(autoincrement())
+  leaseId      Int
+  lease        Lease    @relation(fields: [leaseId], references: [id])
+  fileName     String
+  originalName String
+  fileType     String
+  fileSize     Int
+  fileUrl      String
+  version      Int      @default(1)
+  uploadedBy   String?
+  remark       String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

@@ -210,6 +210,37 @@ async function main() {
   });
   console.log('Created equipment repairs');
 
+  const leases = await prisma.lease.findMany({
+    take: 3,
+    orderBy: { id: 'asc' },
+  });
+
+  for (let i = 0; i < leases.length; i++) {
+    const docCount = i % 2 === 0 ? 2 : 1;
+    for (let v = 1; v <= docCount; v++) {
+      const isPdf = v === 1;
+      const ext = isPdf ? 'pdf' : 'jpg';
+      const fileType = isPdf ? 'application/pdf' : 'image/jpeg';
+      const baseSize = isPdf ? 500000 : 200000;
+      const fileSize = baseSize + Math.floor(Math.random() * 500000);
+
+      await prisma.leaseDocument.create({
+        data: {
+          leaseId: leases[i].id,
+          fileName: `lease_${leases[i].id}_v${v}.${ext}`,
+          originalName: `租约${leases[i].id}_版本${v}.${ext}`,
+          fileType,
+          fileSize,
+          fileUrl: `/uploads/leases/lease_${leases[i].id}_v${v}.${ext}`,
+          version: v,
+          uploadedBy: '系统',
+          remark: v === 1 ? '初始租约合同' : '补充协议',
+        },
+      });
+    }
+  }
+  console.log('Created lease documents');
+
   console.log('Seed data created successfully!');
 }
 
