@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   Tag,
@@ -31,13 +31,20 @@ function Rents() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [form] = Form.useForm();
-  const [stats, setStats] = useState({
-    total: 0,
-    paid: 0,
-    unpaid: 0,
-    paidAmount: 0,
-    unpaidAmount: 0,
-  });
+
+  const filteredBills = useMemo(() => {
+    if (statusFilter === 'all') return bills;
+    return bills.filter((b) => b.status === statusFilter);
+  }, [bills, statusFilter]);
+
+  const stats = useMemo(() => {
+    const total = filteredBills.length;
+    const paid = filteredBills.filter((b) => b.status === 'paid').length;
+    const unpaid = filteredBills.filter((b) => b.status === 'unpaid').length;
+    const paidAmount = filteredBills.filter((b) => b.status === 'paid').reduce((s, b) => s + b.amount, 0);
+    const unpaidAmount = filteredBills.filter((b) => b.status === 'unpaid').reduce((s, b) => s + b.amount, 0);
+    return { total, paid, unpaid, paidAmount, unpaidAmount };
+  }, [filteredBills]);
 
   useEffect(() => {
     loadData();
@@ -45,12 +52,8 @@ function Rents() {
 
   const loadData = async () => {
     try {
-      const [billsRes, statsRes] = await Promise.all([
-        api.get('/rents'),
-        api.get('/rents/statistics'),
-      ]);
+      const billsRes = await api.get('/rents');
       setBills(billsRes.data || []);
-      setStats(statsRes.data || { total: 0, paid: 0, unpaid: 0, paidAmount: 0, unpaidAmount: 0 });
     } catch (e) {
       message.error('加载数据失败');
     }

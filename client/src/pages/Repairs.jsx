@@ -386,7 +386,8 @@ function Repairs() {
                       onClick={async () => {
                         try {
                           message.loading({ content: '正在导出...', key: 'export' });
-                          await downloadFile('/reports/repairs', '设备报修报表.xlsx');
+                          const statusParam = statusFilter && statusFilter !== 'all' ? `?status=${statusFilter}` : '';
+                          await downloadFile(`/reports/repairs${statusParam}`, '设备报修报表.xlsx');
                           message.success({ content: '导出成功', key: 'export' });
                         } catch (e) {
                           message.error({ content: '导出失败', key: 'export' });

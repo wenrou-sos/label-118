@@ -117,7 +117,12 @@ router.get('/rents', async (req, res, next) => {
 
 router.get('/complaints', async (req, res, next) => {
   try {
+    const { status } = req.query;
+    const where = {};
+    if (status && status !== 'all') where.status = status;
+
     const complaints = await prisma.complaint.findMany({
+      where,
       include: { stall: true, assignee: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -281,7 +286,12 @@ router.get('/activities/:id/sales', async (req, res, next) => {
 
 router.get('/repairs', async (req, res, next) => {
   try {
+    const { status } = req.query;
+    const where = {};
+    if (status && status !== 'all') where.status = status;
+
     const repairs = await prisma.equipmentRepair.findMany({
+      where,
       include: { equipment: true, stall: true, assignee: true },
       orderBy: { createdAt: 'desc' },
     });
