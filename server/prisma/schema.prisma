@@ -227,5 +227,19 @@ model Admin {
   department   String?
   complaints   Complaint[]
   repairs      EquipmentRepair[]
+  notices      Notice[]
   createdAt    DateTime @default(now())
+}
+
+model Notice {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String   @db.Text
+  priority  String   @default("normal")
+  publisherId Int?
+  publisher Admin?   @relation(fields: [publisherId], references: [id])
+  isTop     Boolean  @default(false)
+  status    String   @default("published")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
