@@ -459,6 +459,7 @@ function Stalls() {
                   startDate: row.startDate,
                   endDate: row.endDate,
                   monthlyRent: row.monthlyRent,
+                  deposit: row.deposit,
                   status: row.status,
                 },
               })

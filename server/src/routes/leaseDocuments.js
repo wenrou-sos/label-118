@@ -124,6 +124,28 @@ router.get('/:id/download', async (req, res, next) => {
   }
 });
 
+router.get('/:id/preview', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    const document = await prisma.leaseDocument.findUnique({ where: { id } });
+    if (!document) {
+      return res.status(404).json({ error: '文件不存在' });
+    }
+
+    const filePath = path.join(uploadDir, document.fileName);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: '物理文件不存在' });
+    }
+
+    res.setHeader('Content-Type', document.fileType);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(document.originalName)}"`);
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.delete('/:id', async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);

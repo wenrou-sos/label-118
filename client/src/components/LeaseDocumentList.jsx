@@ -141,7 +141,7 @@ function LeaseDocumentList({ leaseId, stallNumber }) {
   };
 
   const getPreviewUrl = (file) => {
-    return `/api/lease-documents/${file.id}/download`;
+    return `/api/lease-documents/${file.id}/preview`;
   };
 
   return (
@@ -200,22 +200,6 @@ function LeaseDocumentList({ leaseId, stallNumber }) {
                     >
                       下载
                     </Button>,
-                    <Popconfirm
-                      title="确定要删除该文件吗？"
-                      description="删除后无法恢复"
-                      okText="确定"
-                      cancelText="取消"
-                      onConfirm={() => handleDelete(item.id)}
-                    >
-                      <Button
-                        type="link"
-                        size="small"
-                        danger
-                        icon={<DeleteOutlined />}
-                      >
-                        删除
-                      </Button>
-                    </Popconfirm>,
                   ]}
                 >
                   <List.Item.Meta
@@ -237,7 +221,7 @@ function LeaseDocumentList({ leaseId, stallNumber }) {
                     }
                     description={
                       <Space size="large" style={{ color: '#999', fontSize: 12 }}>
-                        <span>{formatFileSize(item.size)}</span>
+                        <span>{formatFileSize(item.fileSize)}</span>
                         <span>
                           {dayjs(item.uploadTime || item.createdAt).format(
                             'YYYY-MM-DD HH:mm'
