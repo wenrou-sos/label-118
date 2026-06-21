@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.notice.deleteMany();
   await prisma.admin.deleteMany();
   await prisma.activityParticipation.deleteMany();
   await prisma.equipmentRepair.deleteMany();
@@ -240,6 +241,50 @@ async function main() {
     }
   }
   console.log('Created lease documents');
+
+  const adminList = await prisma.admin.findMany();
+  const noticesData = [
+    {
+      title: '关于美食街夏季营业时间调整的通知',
+      content: '各位商户您好：\n\n随着夏季来临，为更好地服务顾客，经研究决定，自即日起美食街营业时间调整为：\n\n周一至周五：10:00 - 22:00\n周六周日：09:00 - 23:00\n\n请各商户做好相应准备，按时营业。\n\n谢谢配合！',
+      priority: 'high',
+      publisherId: adminList[0]?.id,
+      isTop: true,
+    },
+    {
+      title: '食品安全检查通知',
+      content: '为保障食品安全，物业将于本周五（6月26日）上午9:00-12:00进行食品安全专项检查。请各商户提前做好准备，确保：\n\n1. 从业人员持健康证上岗\n2. 食品原料新鲜、在保质期内\n3. 操作间卫生整洁\n4. 餐具消毒到位\n\n请各商户积极配合检查工作。',
+      priority: 'normal',
+      publisherId: adminList[1]?.id,
+      isTop: false,
+    },
+    {
+      title: '夏日美食节活动报名通知',
+      content: '一年一度的夏日美食节即将开幕！现诚邀各位商户踊跃报名参与。\n\n活动时间：7月10日 - 7月20日\n活动地点：美食街中心广场\n报名截止：7月1日\n\n参与商户可获得：\n- 免费展位布置\n- 活动宣传推广\n- 客流导入支持\n\n有意向的商户请到物业办公室报名或电话咨询。',
+      priority: 'normal',
+      publisherId: adminList[0]?.id,
+      isTop: false,
+    },
+    {
+      title: '停车场维修通知',
+      content: '因停车场设施升级改造，B区停车场将于6月25日-6月27日临时关闭维修。\n\n维修期间，请商户和顾客将车辆停放到A区停车场。给您带来不便，敬请谅解。\n\n如有疑问，请联系物业客服。',
+      priority: 'low',
+      publisherId: adminList[1]?.id,
+      isTop: false,
+    },
+    {
+      title: '商户消防安全培训通知',
+      content: '为提升商户消防安全意识和应急处置能力，物业将组织消防安全培训。\n\n培训时间：7月3日 下午14:00\n培训地点：美食街会议室\n参加人员：各商户负责人及店员代表\n\n请各商户务必派人参加，共同维护美食街消防安全。',
+      priority: 'normal',
+      publisherId: adminList[1]?.id,
+      isTop: false,
+    },
+  ];
+
+  for (const n of noticesData) {
+    await prisma.notice.create({ data: n });
+  }
+  console.log('Created notices');
 
   console.log('Seed data created successfully!');
 }

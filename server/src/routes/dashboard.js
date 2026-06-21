@@ -32,6 +32,8 @@ router.get('/summary', async (req, res, next) => {
     const hygieneB = await prisma.stall.count({ where: { hygieneLevel: 'B' } });
     const hygieneC = await prisma.stall.count({ where: { hygieneLevel: 'C' } });
 
+    const publishedNotices = await prisma.notice.count({ where: { status: 'published' } });
+
     res.json({
       stallCount,
       merchantCount,
@@ -42,6 +44,7 @@ router.get('/summary', async (req, res, next) => {
       pendingComplaints,
       pendingRepairs,
       ongoingActivities,
+      publishedNotices,
       hygiene: { A: hygieneA, B: hygieneB, C: hygieneC },
     });
   } catch (e) {
@@ -70,7 +73,21 @@ router.get('/recent-activities', async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ complaints, repairs, activities });
+    const notices = await prisma.notice.findMany({
+      take: limit,
+      where: { status: 'published' },
+      include: {
+        publisher: {
+          select: { name: true, role: true },
+        },
+      },
+      orderBy: [
+        { isTop: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+
+    res.json({ complaints, repairs, activities, notices });
   } catch (e) {
     next(e);
   }

@@ -9,9 +9,11 @@ import {
   ToolOutlined,
   CalendarOutlined,
   RiseOutlined,
+  BellOutlined,
 } from '@ant-design/icons';
 import { motion } from 'framer-motion';
 import { Pie, Line, Column } from '@ant-design/charts';
+import { Link } from 'react-router-dom';
 import api from '../api';
 import dayjs from 'dayjs';
 
@@ -73,6 +75,7 @@ function Dashboard() {
         { title: '待处理投诉', value: summary.pendingComplaints, icon: <MessageOutlined />, color: '#722ed1' },
         { title: '待维修', value: summary.pendingRepairs, icon: <ToolOutlined />, color: '#fa8c16' },
         { title: '进行中活动', value: summary.ongoingActivities, icon: <CalendarOutlined />, color: '#2f54eb' },
+        { title: '通知公告', value: summary.publishedNotices, icon: <BellOutlined />, color: '#fa541c' },
       ]
     : [];
 
@@ -93,6 +96,12 @@ function Dashboard() {
     planning: { color: 'blue', text: '策划中' },
     ongoing: { color: 'green', text: '进行中' },
     completed: { color: 'gray', text: '已结束' },
+  };
+
+  const noticePriorityMap = {
+    high: { color: 'red', text: '重要' },
+    normal: { color: 'blue', text: '普通' },
+    low: { color: 'default', text: '一般' },
   };
 
   const pieConfig = {
@@ -190,6 +199,56 @@ function Dashboard() {
               </Card>
             </Col>
           </Row>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Card
+            title={
+              <Space>
+                <BellOutlined style={{ color: '#fa541c' }} />
+                <span>最新通知公告</span>
+              </Space>
+            }
+            className="dashboard-card notice-card"
+            extra={<Link to="/notices" style={{ color: '#fa541c' }}>查看全部</Link>}
+          >
+            <List
+              dataSource={recentActivities?.notices?.slice(0, 3) || []}
+              renderItem={(item) => (
+                <List.Item>
+                  <List.Item.Meta
+                    avatar={
+                      <Avatar
+                        icon={<BellOutlined />}
+                        style={{
+                          backgroundColor: item.isTop ? '#f5222d' : '#fa8c16',
+                        }}
+                      />
+                    }
+                    title={
+                      <Space>
+                        {item.isTop && <Tag color="red">置顶</Tag>}
+                        <Tag color={noticePriorityMap[item.priority]?.color || 'default'}>
+                          {noticePriorityMap[item.priority]?.text || '普通'}
+                        </Tag>
+                        <span style={{ fontWeight: 500 }}>{item.title}</span>
+                      </Space>
+                    }
+                    description={
+                      <div>
+                        <div style={{ color: '#666', marginBottom: 4 }}>
+                          发布人：{item.publisher?.name || '系统管理员'}
+                        </div>
+                        <div style={{ color: '#999', fontSize: 12 }}>
+                          {dayjs(item.createdAt).format('YYYY-MM-DD HH:mm')}
+                        </div>
+                      </div>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </Card>
         </motion.div>
 
         <motion.div variants={containerVariants}>

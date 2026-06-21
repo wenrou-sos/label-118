@@ -16,6 +16,7 @@ import repairsRouter from './routes/repairs.js';
 import dailyRouter from './routes/daily.js';
 import dashboardRouter from './routes/dashboard.js';
 import leaseDocumentsRouter from './routes/leaseDocuments.js';
+import noticesRouter from './routes/notices.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,6 +83,7 @@ app.use('/api/repairs', repairsRouter);
 app.use('/api/daily', dailyRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/lease-documents', leaseDocumentsRouter);
+app.use('/api/notices', noticesRouter);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

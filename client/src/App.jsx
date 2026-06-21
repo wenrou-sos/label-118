@@ -8,6 +8,7 @@ import {
   CalendarOutlined,
   ToolOutlined,
   DashboardOutlined,
+  BellOutlined,
 } from '@ant-design/icons';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,11 +19,13 @@ import Daily from './pages/Daily.jsx';
 import Complaints from './pages/Complaints.jsx';
 import Activities from './pages/Activities.jsx';
 import Repairs from './pages/Repairs.jsx';
+import Notices from './pages/Notices.jsx';
 
 const { Header, Content, Sider } = Layout;
 
 const menuItems = [
   { key: '/', icon: <DashboardOutlined />, label: '运营看板' },
+  { key: '/notices', icon: <BellOutlined />, label: '通知公告' },
   { key: '/stalls', icon: <ShopOutlined />, label: '摊位管理' },
   { key: '/rents', icon: <DollarOutlined />, label: '租金管理' },
   { key: '/daily', icon: <CoffeeOutlined />, label: '商户日常' },
@@ -120,6 +123,7 @@ function App() {
               >
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
+                  <Route path="/notices" element={<Notices />} />
                   <Route path="/stalls" element={<Stalls />} />
                   <Route path="/rents" element={<Rents />} />
                   <Route path="/daily" element={<Daily />} />
